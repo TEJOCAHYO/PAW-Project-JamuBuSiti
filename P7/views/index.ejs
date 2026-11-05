@@ -1,0 +1,158 @@
+<%- include('partials/head', { title }) %>
+  <main id="app"><div class="empty">Memuat...</div></main>
+<script>
+const KELUHAN = <%- JSON.stringify(keluhan) %>;
+const JAM = <%- JSON.stringify(jamAntar) %>;
+const SELLER_ID = <%- JSON.stringify(sellerLogin) %>;
+
+const $ = document.querySelector.bind(document);
+const rp = n => 'Rp' + n.toLocaleString('id-ID');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const S = { alamat: load('alamat', ''), keluhan: 'Semua', edit: null, cart: load('cart', []) };
+const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('show'); setTimeout(() => e.classList.remove('show'), 2200); };
+const api = async (u, o = {}) => {
+  const r = await fetch('/api' + u, { method: o.method || 'GET', headers: { 'Content-Type': 'application/json' }, body: o.body ? JSON.stringify(o.body) : undefined });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.pesan || 'Terjadi kesalahan');
+  return d;
+};
+const WARNA = {"Beras kencur":"#efe2b0","Kunyit asam":"#e8a317","Cabe puyang":"#c8512b","Temulawak":"#e58a1f","Jahe wangi":"#d9b66b","Pahitan":"#5e7f3a","Sinom":"#9cc453","Wedang jahe serai":"#e0b04a"};
+const bottle = (n, w = 40) => `<svg class="btl" width="${w}" height="${w*1.5}" viewBox="0 0 40 60" aria-hidden="true"><rect x="15" y="1" width="10" height="9" rx="2" fill="#6b4a2b"/><path d="M14 10h12v6c6 3 8 8 8 14v23a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6V30c0-6 2-11 8-14z" fill="#fff" stroke="#12281a" stroke-width="2.5"/><path d="M7.5 32h25v21a4.5 4.5 0 0 1-4.500 4.500h-16A4.500 4.500 0 0 1 7.500 53z" fill="${WARNA[n]||"#e8a317"}"/><rect x="12" y="38" width="4" height="12" rx="2" fill="#fff" opacity=".45"/></svg>`;
+
+/* ---------- Tampilan (data dari API) ---------- */
+const VIEWS = {
+  async beranda() {
+    let h = `<section class="hero"><div><h1>Jamu segar, diantar sampai rumah</h1>
+      <p>Pilih keluhanmu, pesan dari penjual jamu terdekat, lalu tunggu jamu sampai.</p>
+      <form class="addr" data-form="alamat"><input id="alamat" placeholder="Alamat pengantaran" value="${esc(S.alamat)}" aria-label="Alamat pengantaran" required><button>Simpan alamat</button></form></div>
+      <div class="bottles" aria-hidden="true">${bottle('Kunyit asam',54)}${bottle('Sinom',66)}${bottle('Beras kencur',58)}${bottle('Cabe puyang',48)}</div></section>
+      <ol class="steps"><li><b>Klik</b>Pilih jamu sesuai keluhan</li><li><b>Bayar</b>QRIS atau transfer</li><li><b>Tunggu</b>Penjual mengantar ke rumah</li></ol>
+      <div class="chips" role="group" aria-label="Keluhan">${KELUHAN.map(k => `<button class="chip" data-act="keluhan" data-v="${k}" aria-pressed="${S.keluhan === k}">${k}</button>`).join('')}</div>`;
+    if (!S.alamat) return h + '<div class="empty">Isi alamat pengantaran dulu untuk melihat penjual dalam radius 5 km.</div>';
+    const list = await api('/sellers?keluhan=' + encodeURIComponent(S.keluhan));
+    if (!list.length) return h + `<div class="empty">Belum ada jamu untuk keluhan "${esc(S.keluhan)}" dalam radius 5 km.</div>`;
+    return h + list.map(s => `<article class="seller"><header><div class="avatar">${esc(s.nama.replace('Jamu ', '')[0])}</div><div><h2>${esc(s.nama)}</h2>
+      <div class="meta">${s.jarak.toFixed(1)} km · ★ ${s.rating} (${s.jumlahUlasan} ulasan baru) · ${s.racik}${s.verif ? ' · Penjual terverifikasi' : ''}</div></div></header>
+      ${s.menu.map(m => `<div class="item">${bottle(m.nama, 30)}<div><strong>${m.nama}</strong> ${m.habis ? '<span class="habis">Habis</span>' : `<span style="font-size:0.85rem; color:#666;">(Stok: ${m.stok} porsi)</span>`}
+        <div>${m.keluhan.map(k => `<span class="tag">${k}</span>`).join('')}</div></div>
+        <div class="price"><strong>${rp(m.harga)}</strong><button data-act="tambah" data-id="${m.id}" data-s="${s.id}" data-n="${m.nama}" ${m.habis ? 'disabled' : ''}>Tambah</button></div></div>`).join('')}
+      ${s.ulasanTerbaru ? `<div class="meta">Ulasan terbaru: "${esc(s.ulasanTerbaru)}"</div>` : ''}</article>`).join('');
+  },
+  async keranjang() {
+    if (!S.cart.length) return `<div class="empty">${bottle('Sinom', 40)}<h2>Keranjang kosong</h2><p>Pilih jamu di halaman Cari jamu.</p></div>`;
+    const menu = await api('/menu'); const mo = id => menu.find(m => m.id === id);
+    const total = S.cart.reduce((a, c) => a + mo(c.id).harga * c.qty, 0);
+    return `<h1>Keranjang</h1><div class="panel">${S.cart.map(c => { const m = mo(c.id); return `<div class="item">${bottle(m.nama, 30)}<strong>${m.nama}</strong>
+      <div class="qty"><button class="ghost" data-act="kurang" data-id="${c.id}" aria-label="Kurangi">−</button><span>${c.qty}</span>
+      <button class="ghost" data-act="tambah" data-id="${c.id}" data-s="${c.sellerId}" data-n="${m.nama}" aria-label="Tambah">+</button><strong>${rp(m.harga * c.qty)}</strong></div></div>`; }).join('')}
+      <div class="row"><label>Jam antar<select id="jam">${JAM.map(j => `<option>${j}</option>`).join('')}</select></label>
+      <label>Metode pembayaran<select id="metode"><option>QRIS</option><option>Transfer bank</option></select></label></div>
+      <div class="total">Total ${rp(total)}</div><div class="actions"><button data-act="bayar">Bayar sekarang</button></div></div>`;
+  },
+  async riwayat() {
+    const orders = await api('/orders');
+    if (!orders.length) return `<div class="empty">${bottle('Kunyit asam', 40)}<h2>Belum ada pesanan</h2><p>Pesananmu akan muncul di sini.</p></div>`;
+    return '<h1>Pesanan saya</h1>' + orders.map(o => `<div class="order"><div><strong>${esc(o.sellerNama)}</strong> <span class="st ${o.status}">${o.status}</span></div>
+      <div class="meta">${o.items.map(i => `${i.qty}× ${i.nama}`).join(', ')} · ${rp(o.total)} · antar: ${o.jam} · ${o.metode}</div>
+      <div class="actions"><button class="ghost" data-act="ulang" data-id="${o.id}">Pesan lagi</button></div>
+      ${o.status === 'Selesai' && !o.ulasan ? `<form class="row" data-form="ulasan" data-id="${o.id}"><label>Rating<select name="rating">${[5,4,3,2,1].map(n => `<option>${n}</option>`).join('')}</select></label>
+        <label style="flex:1">Ulasan<input name="teks" required maxlength="300" placeholder="Ceritakan kebersihan dan rasa jamunya"></label><button>Kirim ulasan</button></form>` : ''}
+      ${o.ulasan ? `<div class="meta">Ulasanmu: ★ ${o.ulasan.rating} — ${esc(o.ulasan.teks)}</div>` : ''}</div>`).join('');
+  },
+  async produk() {
+    const list = await api('/produk?sellerId=' + SELLER_ID);
+    const ada = list.filter(p => !p.habis).length;
+    const totalStok = list.reduce((a, p) => a + p.stok, 0);
+    const ed = S.edit && S.edit !== 'baru' ? list.find(p => p.id === S.edit) : null;
+    const form = S.edit ? `<form class="panel" data-form="produk" data-id="${ed ? ed.id : ''}"><h2>${ed ? 'Edit produk' : 'Tambah produk baru'}</h2>
+      <div class="row"><label>Nama jamu<input name="nama" required maxlength="60" value="${ed ? esc(ed.nama) : ''}"></label>
+      <label>Harga (Rp)<input name="harga" type="number" min="1000" max="500000" step="500" required value="${ed ? ed.harga : ''}"></label></div>
+      <div class="row"><label>Stok (Porsi)<input name="stok" type="number" min="0" max="9999" required value="${ed ? ed.stok : 10}"></label></div>
+      <div class="row">${KELUHAN.slice(1).map(k => `<label class="cek"><input type="checkbox" name="keluhan" value="${k}" ${ed && ed.keluhan.includes(k) ? 'checked' : ''}> ${k}</label>`).join('')}</div>
+      <div class="actions"><button>${ed ? 'Simpan perubahan' : 'Simpan produk'}</button><button type="button" class="ghost" data-act="batal">Batal</button></div></form>` : '';
+    return `<div class="bar"><div><h1>Produk saya</h1><div class="meta">Kelola jamu yang kamu jual: tambah, ubah harga, dan ubah stok.</div></div><button data-act="baru">+ Tambah produk</button></div>
+      <div class="stats"><div><b>${list.length}</b>Jenis produk</div><div><b>${totalStok}</b>Total sisa stok (porsi)</div><div><b>${ada}</b>Masih tersedia</div><div><b>${list.length - ada}</b>Habis</div></div>${form}
+      ${list.length ? `<div class="tablewrap"><table><thead><tr><th>Produk</th><th>Harga (Rp)</th><th>Sisa stok (porsi)</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${list.map(p => `<tr class="${p.habis ? 'mati' : ''}">
+        <td><div class="pn">${bottle(p.nama, 26)}<div><strong>${esc(p.nama)}</strong><div>${p.keluhan.map(k => `<span class="tag">${k}</span>`).join('')}</div></div></div></td>
+        <td><input class="harga" type="number" min="1000" max="500000" step="500" value="${p.harga}" data-harga="${p.id}" aria-label="Harga ${esc(p.nama)}"></td>
+        <td><input class="harga stok" type="number" min="0" max="9999" value="${p.stok}" data-stok="${p.id}" aria-label="Stok ${esc(p.nama)}"> ${p.stok > 0 && p.stok <= 5 ? '<span class="habis">menipis</span>' : ''}</td>
+        <td><span class="st ${p.habis ? 'Ditolak' : 'Selesai'}">${p.habis ? 'Habis' : 'Tersedia'}</span></td>
+        <td><div class="actions" style="margin:0"><button class="ghost" data-act="edit" data-id="${p.id}">Edit</button><button class="ghost" data-act="habis" data-id="${p.id}" data-h="${p.habis ? 0 : 1}">${p.habis ? 'Tandai tersedia' : 'Tandai habis'}</button><button class="bad" data-act="hapus" data-id="${p.id}">Hapus</button></div></td></tr>`).join('')}</tbody></table></div>`
+      : '<div class="empty">Belum ada produk. Klik "Tambah produk" untuk mulai berjualan.</div>'}`;
+  },
+  async penjual() {
+    const [me, orders] = await Promise.all([api('/sellers/' + SELLER_ID), api('/orders?sellerId=' + SELLER_ID)]);
+    return `<h1>Pesanan masuk</h1><div class="meta">${esc(me.nama)}</div><h2 style="margin:18px 0 8px">Daftar pesanan</h2>` +
+      (orders.length ? orders.map(o => `<div class="order"><span class="st ${o.status}">${o.status}</span> <strong>${rp(o.total)}</strong>
+        <div class="meta">${o.items.map(i => `${i.qty}× ${i.nama}`).join(', ')} · antar: ${o.jam}</div><div class="actions">
+        ${o.status === 'Dibayar' ? `<button data-act="terima" data-id="${o.id}">Terima</button><button class="bad" data-act="tolak" data-id="${o.id}">Tolak</button>` : ''}
+        ${o.status === 'Diproses' ? `<button data-act="selesai" data-id="${o.id}">Tandai selesai diantar</button>` : ''}</div></div>`).join('')
+       : '<div class="empty">Belum ada pesanan. Buat pesanan dari halaman pembeli untuk mencobanya.</div>');
+  }
+};
+
+async function render() {
+  const h = location.hash.slice(1), v = Object.hasOwn(VIEWS, h) ? h : 'produk';
+  try { $('#app').innerHTML = await VIEWS[v](); }
+  catch (e) { $('#app').innerHTML = '<div class="empty">Gagal memuat data: ' + esc(e.message) + '</div>'; }
+  document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('on', a.dataset.nav === v));
+  $('#badge').textContent = S.cart.reduce((a, c) => a + c.qty, 0);
+  localStorage.setItem('alamat', JSON.stringify(S.alamat)); localStorage.setItem('cart', JSON.stringify(S.cart));
+}
+addEventListener('hashchange', render);
+
+const status = (b, st, msg) => api(`/orders/${b.dataset.id}/status`, { method: 'PATCH', body: { status: st } }).then(() => toast(msg));
+const A = {
+  keluhan: b => { S.keluhan = b.dataset.v; },
+  tambah: b => {
+    const d = b.dataset;
+    if (S.cart.length && S.cart[0].sellerId !== d.s) { if (!confirm('Keranjang berisi jamu dari penjual lain. Kosongkan keranjang dan lanjutkan?')) return false; S.cart = []; }
+    const c = S.cart.find(x => x.id === d.id); c ? c.qty++ : S.cart.push({ id: d.id, sellerId: d.s, qty: 1 });
+    if (location.hash !== '#keranjang') toast(d.n + ' masuk keranjang');
+  },
+  kurang: b => { const c = S.cart.find(x => x.id === b.dataset.id); if (--c.qty <= 0) S.cart = S.cart.filter(x => x !== c); },
+  bayar: async () => {
+    await api('/orders', { method: 'POST', body: { items: S.cart.map(({ id, qty }) => ({ id, qty })), jam: $('#jam').value, metode: $('#metode').value } });
+    S.cart = []; toast('Pembayaran berhasil. Pesanan dikirim ke penjual.'); location.hash = '#riwayat';
+  },
+  ulang: async b => { const o = (await api('/orders')).find(x => x.id === b.dataset.id); S.cart = o.items.map(i => ({ id: i.id, sellerId: o.sellerId, qty: i.qty })); toast('Item dimasukkan ke keranjang'); location.hash = '#keranjang'; },
+  terima: b => status(b, 'Diproses', 'Pesanan diterima'),
+  tolak: b => status(b, 'Ditolak', 'Pesanan ditolak, dana dikembalikan ke pembeli'),
+  selesai: b => status(b, 'Selesai', 'Pesanan selesai'),
+  stok: b => api(`/menu/${b.dataset.id}/stok`, { method: 'PATCH' }),
+  baru: () => { S.edit = 'baru'; },
+  edit: b => { S.edit = b.dataset.id; },
+  batal: () => { S.edit = null; },
+  habis: b => api('/produk/' + b.dataset.id, { method: 'PUT', body: { habis: b.dataset.h === '1' } }).then(() => toast(b.dataset.h === '1' ? 'Ditandai habis' : 'Ditandai tersedia')),
+  hapus: b => { if (!confirm('Hapus jamu ini dari menu?')) return false; if (S.edit === b.dataset.id) S.edit = null; return api('/produk/' + b.dataset.id, { method: 'DELETE' }).then(() => toast('Produk dihapus')); }
+};
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  try { if (await A[b.dataset.act](b) === false) return; } catch (err) { toast(err.message); }
+  render();
+});
+document.addEventListener('change', async e => {
+  const target = e.target;
+  if (target.dataset.harga) {
+    try { await api('/produk/' + target.dataset.harga, { method: 'PUT', body: { harga: +target.value } }); toast('Harga diperbarui'); render(); } catch (err) { toast(err.message); }
+  } else if (target.dataset.stok) {
+    try { await api('/produk/' + target.dataset.stok, { method: 'PUT', body: { stok: +target.value } }); toast('Stok diperbarui'); render(); } catch (err) { toast(err.message); }
+  }
+});
+document.addEventListener('submit', async e => {
+  const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault();
+  try {
+    if (f.dataset.form === 'alamat') { S.alamat = $('#alamat').value.trim(); toast('Alamat disimpan'); }
+    else if (f.dataset.form === 'produk') {
+      const id = f.dataset.id, body = { nama: f.nama.value, harga: +f.harga.value, stok: +f.stok.value, keluhan: [...f.querySelectorAll('[name=keluhan]:checked')].map(x => x.value) };
+      if (id) await api('/produk/' + id, { method: 'PUT', body }); else await api('/produk', { method: 'POST', body: { ...body, sellerId: SELLER_ID } });
+      S.edit = null; toast(id ? 'Perubahan disimpan' : 'Produk ditambahkan');
+    }
+    else { await api(`/orders/${f.dataset.id}/review`, { method: 'POST', body: { rating: +f.rating.value, teks: f.teks.value.trim() } }); toast('Ulasan terkirim'); }
+  } catch (err) { toast(err.message); }
+  render();
+});
+render();
+</script>
+<%- include('partials/footer') %>

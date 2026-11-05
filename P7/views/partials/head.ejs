@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+:root{--ink:#12281a;--daun:#1f5a36;--kunyit:#f5b700;--tint:#e1eedb;--bg:#f2f7ee;--jahe:#c0432a;--line:#c9dabf;--white:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Nunito Sans",system-ui,sans-serif}
+h1,h2,h3,.brand{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--ink);position:sticky;top:0;z-index:5}
+.brand{font-size:28px;font-weight:800;color:var(--kunyit);text-decoration:none;letter-spacing:-.5px}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{color:#e8f2e2;text-decoration:none;padding:8px 14px;border-radius:99px;font-weight:600}
+nav a:hover{background:rgba(255,255,255,.1)}
+nav a.on{background:var(--kunyit);color:var(--ink)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--daun);outline-offset:2px}
+.badge{background:var(--ink);color:var(--kunyit);border-radius:99px;padding:0 8px;font-size:13px;font-weight:700}
+nav a.on .badge{background:var(--ink)}
+nav a:not(.on) .badge{background:var(--kunyit);color:var(--ink)}
+main{max-width:960px;margin:0 auto;padding:24px 16px 56px}
+/* Hero: rak botol jamu */
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:end;padding:32px 32px 0;border-radius:28px;background:var(--kunyit);margin-bottom:16px;overflow:hidden}
+.hero h1{font-size:clamp(32px,6.5vw,56px);font-weight:800;letter-spacing:-1px;max-width:12ch}
+.hero p{max-width:40ch;margin:12px 0 18px;font-size:17px}
+.hero form{padding-bottom:32px}
+.bottles{display:flex;gap:10px;align-items:flex-end;justify-content:center;border-bottom:8px solid var(--ink);padding:0 8px}
+.bottles .btl{animation:naik .7s cubic-bezier(.2,.9,.3,1.2) both}
+.bottles .btl:nth-child(2){animation-delay:.12s}.bottles .btl:nth-child(3){animation-delay:.24s}.bottles .btl:nth-child(4){animation-delay:.36s}
+@keyframes naik{from{transform:translateY(60px);opacity:0}}
+.addr{display:flex;gap:8px;flex-wrap:wrap}
+.addr input{flex:1;min-width:200px;border:2px solid var(--ink)}
+input,select,textarea{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+button{font:inherit;font-weight:700;border:0;border-radius:99px;padding:10px 18px;cursor:pointer;background:var(--daun);color:#fff;transition:transform .12s}
+button:active{transform:scale(.96)}
+.hero button{background:var(--ink)}
+button.ghost{background:var(--tint);color:var(--ink)}
+button.bad{background:var(--jahe)}
+button:disabled{opacity:.4;cursor:not-allowed}
+/* Langkah */
+.steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0;margin:0 0 22px}
+.steps li{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:14px}
+.steps b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:20px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.chip{background:#fff;border:2px solid var(--line);color:var(--ink)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--kunyit);border-color:var(--ink)}
+/* Kartu */
+.seller,.panel,.order{background:#fff;border:2px solid var(--ink);border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:5px 5px 0 var(--ink)}
+.seller header{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--daun);color:var(--kunyit);display:grid;place-items:center;font:800 20px "Bricolage Grotesque",sans-serif;flex:none}
+.meta{color:#46604d;font-size:14px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 0;border-top:1px dashed var(--line)}
+.item .btl{width:30px;height:auto}
+.price{text-align:right}
+.price strong{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:18px}
+.tag{background:var(--tint);border-radius:99px;padding:1px 10px;font-size:13px;margin-right:4px}
+.habis{color:var(--jahe);font-weight:800}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{padding:4px 14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+.row label{display:flex;flex-direction:column;gap:4px;font-weight:700}
+.total{font:800 28px "Bricolage Grotesque",sans-serif}
+.st{display:inline-block;padding:2px 12px;border-radius:99px;font-size:13px;font-weight:800;background:var(--kunyit)}
+.st.Ditolak{background:#f3d5cd;color:var(--jahe)}
+.st.Selesai{background:var(--daun);color:#fff}
+.empty{padding:36px 20px;text-align:center;color:#46604d;background:#fff;border:2px dashed var(--line);border-radius:20px}
+.empty .btl{margin-bottom:8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.foot{padding:20px;text-align:center;font-size:14px;color:#46604d;border-top:2px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--kunyit);padding:12px 20px;border-radius:99px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:640px){.hero{grid-template-columns:1fr;padding:24px 20px 0}.hero form{padding-bottom:16px}.steps{grid-template-columns:1fr}.item{grid-template-columns:auto 1fr}.price{grid-column:1/-1;text-align:left;display:flex;justify-content:space-between;align-items:center}}
+@media (prefers-reduced-motion:reduce){.toast,button{transition:none}.bottles .btl{animation:none}}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stats div{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:14px}
+.stats b{display:block;font:800 28px "Bricolage Grotesque",sans-serif}
+.tablewrap{overflow-x:auto;background:#fff;border:2px solid var(--ink);border-radius:20px;box-shadow:5px 5px 0 var(--ink)}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th{text-align:left;font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding:12px 14px;background:var(--tint);border-bottom:2px solid var(--ink)}
+td{padding:12px 14px;border-top:1px dashed var(--line);vertical-align:middle}
+tr.mati td:not(:last-child){opacity:.55}
+.pn{display:flex;gap:12px;align-items:center}
+input.harga{width:120px;font-weight:700}
+.cek{flex-direction:row!important;gap:6px!important;font-weight:600!important;align-items:center}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#produk">Jamuku</a>
+    <nav aria-label="Menu utama">
+      <a href="#produk" data-nav="produk">Produk saya</a>
+      <a href="#beranda" data-nav="beranda">Etalase pembeli</a>
+      <a href="#keranjang" data-nav="keranjang">Keranjang <span id="badge" class="badge">0</span></a>
+      <a href="#riwayat" data-nav="riwayat">Pesanan saya</a>
+      <a href="#penjual" data-nav="penjual">Pesanan masuk</a>
+    </nav>
+  </header>
